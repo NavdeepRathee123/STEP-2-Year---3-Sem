@@ -50,16 +50,11 @@ class Account
         {
             return true;
         }
-        int count=0;
-        for(int i=pin;i>0;i=i/10)
+        if(count>=1000 && count<=9999)
         {
-            count++;
+            return true;
         }
-        if(count!=4)
-        {
-            return false;
-        }
-        return true;
+        return false;
     }
     boolean has_pin()
     {
