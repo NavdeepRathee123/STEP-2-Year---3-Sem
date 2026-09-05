@@ -216,6 +216,69 @@ class Account
         this.age=age;
     }
 }
+class Savings_Account extends Account
+{
+    private static final double Min_Balance=1000;
+    private static final double Intrest=4;
+    Savings_Account(int account_number,String name,int age,double initial_balance)
+    {
+        super(account_number,name,age,initial_balance,"Savings");
+    }
+    void Apply_Intrest() throws InvalidAmountException,InactiveAccountException
+    {
+        double balance=get_balance();
+        double intrest_amount=(Intrest*balance)/100;
+        deposit(intrest_amount);
+    }
+}
+class Current_Account extends Account
+{
+    public static double Over_draft_Limit=25000;
+    Current_Account(int account_number,String name,int age,double initial_balance)
+    {
+        super(account_number,name,age,initial_balance,"Current");
+    }
+    double get_overdraftLimit()
+    {
+        return Over_draft_Limit;
+    }
+    void set_overdraftLimit(double overdraft) throws IllegalArgumentException
+    {
+        if(overdraft < 0)
+        {
+            throw new IllegalArgumentException("Overdraft limit cannot be negative. Provided: ₹" + overdraft);
+        }
+        Over_draft_Limit = overdraft;
+    }
+}
+class FixedDepositAccount extends Account
+{
+    private int tenureMonths;
+    private double interestRate;
+    FixedDepositAccount(int account_number, String name, int age,double initial_balance, int tenureMonths,double interestRate)
+    {
+        super(account_number, name, age, initial_balance, "FIXED_DEPOSIT");
+        this.tenureMonths = tenureMonths;
+        this.interestRate = interestRate;
+    }
+    double calculateMaturityAmount()
+    {
+        double principal = get_balance();
+        double maturityAmount = principal *Math.pow(1 + interestRate / 100, tenureMonths / 12.0);
+        return maturityAmount;
+    }
+}
+class SalaryAccount extends Account
+{
+    private String employerName;
+    private int inactiveMonths;
+    SalaryAccount(int account_number, String name, int age,double initial_balance, String employerName,int inactiveMonths)
+    {
+        super(account_number, name, age, initial_balance, "SALARY");
+        this.employerName = employerName;
+        this.inactiveMonths = inactiveMonths;
+    }
+}
 class TestAccountExceptions
 {
     public static void main(String[] args)
@@ -226,7 +289,7 @@ class TestAccountExceptions
         System.out.println("  ACCOUNT TEST WITH EXCEPTIONS");
         System.out.println("= ".repeat(20));
         System.out.println("= ".repeat(20));
-        System.out.println(">>> Test 1: Valid Account Creation");
+        System.out.println("Test 1: Valid Account Creation");
         Account Test1=null;
         try
         {
@@ -237,7 +300,7 @@ class TestAccountExceptions
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println(">>> Test 2: Invalid Age (under 18)");
+        System.out.println("Test 2: Invalid Age (under 18)");
         System.out.println("Creating account with age 16");
         try
         {
@@ -247,7 +310,7 @@ class TestAccountExceptions
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println(">>> Test 3: Invalid Account Type");
+        System.out.println("Test 3: Invalid Account Type");
         System.out.println("Creating account with type \"Invalid\"");
         try
         {
@@ -257,7 +320,7 @@ class TestAccountExceptions
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println(">>> Test 4: Minimum Balance on Creation");
+        System.out.println("Test 4: Minimum Balance on Creation");
         System.out.println("Creating Savings account with ₹300");
         try
         {
@@ -299,7 +362,7 @@ class TestAccountExceptions
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println(">>> Test 7: Insufficient Balance");
+        System.out.println("Test 7: Insufficient Balance");
         Account Test6=null;
         try
         {
@@ -311,7 +374,7 @@ class TestAccountExceptions
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println(">>> Test 8: Minimum Balance Violation");
+        System.out.println("Test 8: Minimum Balance Violation");
         Account Test7=null;
         try
         {
@@ -323,7 +386,7 @@ class TestAccountExceptions
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println(">>> Test 9: Account Status");
+        System.out.println("Test 9: Account Status");
         Account Test8=null;
         try
         {
@@ -353,7 +416,7 @@ class TestAccountExceptions
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println(">>> Test 10: PIN Protection");
+        System.out.println("Test 10: PIN Protection");
         Account Test9=null;
         try
         {
