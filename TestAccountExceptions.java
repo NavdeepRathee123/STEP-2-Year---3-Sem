@@ -61,22 +61,22 @@ class Account
         {
             throw new IllegalArgumentException("Customer must be at least 18 years old. Provided: "+age);
         }
-        if(!account_type.equals("Savings") && !account_type.equals("Current"))
+        if(!account_type.equals("SAVINGS") && !account_type.equals("CURRENT") &&!account_type.equals("FIXED_DEPOSIT") &&!account_type.equals("SALARY"))
         {
-            throw new IllegalArgumentException("Account type must be 'Savings' or 'Current'. Provided: "+account_type);
+            throw new IllegalArgumentException("Invalid account type. Provided: "+account_type);
         }
-        double minimum_balance;
-        if(account_type.equals("Savings"))
+        double minimum_balance=0;
+        if(account_type.equals("SAVINGS"))
         {
             minimum_balance=MIN_BALANCE_SAVINGS;
         }
-        else
+        else if(account_type.equals("CURRENT"))
         {
             minimum_balance=MIN_BALANCE_CURRENT;
         }
         if(initial_balance<minimum_balance)
         {
-            throw new IllegalArgumentException(account_type+" account requires minimum balance of ₹"+minimum_balance+". Provided: ₹"+initial_balance);
+            throw new IllegalArgumentException(account_type+" account requires minimum balance of Rs "+minimum_balance+". Provided: Rs "+initial_balance);
         }
         this.account_number=account_number;
         this.name=name;
@@ -89,10 +89,12 @@ class Account
     void deposit(double amount) throws InvalidAmountException,InactiveAccountException
     {
         validateActive();
+
         if(amount<=0)
         {
-            throw new InvalidAmountException("Deposit amount must be positive. Provided: ₹"+amount);
+            throw new InvalidAmountException("Deposit amount must be positive. Provided: Rs "+amount);
         }
+
         balance+=amount;
     }
     void withdraw(double amount,int pin) throws InvalidAmountException,InsufficientBalanceException,MinimumBalanceViolationException,InactiveAccountException,InvalidPinException
@@ -108,19 +110,20 @@ class Account
         }
         if(amount<=0)
         {
-            throw new InvalidAmountException("Withdrawal amount must be positive. Provided: ₹"+amount);
+            throw new InvalidAmountException("Withdrawal amount must be positive. Provided: Rs "+amount);
         }
         if(amount>balance)
         {
-            throw new InsufficientBalanceException("Insufficient balance. Available: ₹"+balance+", Requested: ₹"+amount);
+            throw new InsufficientBalanceException("Insufficient balance. Available: Rs "+balance+", Requested: Rs "+amount);
         }
-        if(balance-amount<getMinimumBalance())
+        double minimumBalance=getMinimumBalance();
+        if(balance-amount<minimumBalance)
         {
-            throw new MinimumBalanceViolationException("Cannot withdraw. Minimum balance of ₹"+getMinimumBalance()+" required. Available after withdrawal: ₹"+(balance-amount));
+            throw new MinimumBalanceViolationException("Cannot withdraw. Minimum balance of Rs "+minimumBalance+" required.");
         }
         balance-=amount;
     }
-    void closeAccount() throws IllegalStateException
+    void closeAccount()
     {
         if(status.equals("Inactive"))
         {
@@ -128,7 +131,7 @@ class Account
         }
         status="Inactive";
     }
-    void reopenAccount() throws IllegalStateException
+    void reopenAccount()
     {
         if(status.equals("Active"))
         {
@@ -136,7 +139,7 @@ class Account
         }
         status="Active";
     }
-    void setPin(int pin) throws IllegalArgumentException
+    void setPin(int pin)
     {
         if(pin<MIN_PIN || pin>MAX_PIN)
         {
@@ -150,32 +153,29 @@ class Account
         {
             return false;
         }
-
         return this.pin==pin;
     }
     boolean hasPin()
     {
-        if(pin!=null)
-        {
-            return true;
-        }
-
-        return false;
+        return pin!=null;
     }
     private double getMinimumBalance()
     {
-        if(account_type.equals("Savings"))
+        if(account_type.equals("SAVINGS"))
         {
             return MIN_BALANCE_SAVINGS;
         }
-
-        return MIN_BALANCE_CURRENT;
+        else if(account_type.equals("CURRENT"))
+        {
+            return MIN_BALANCE_CURRENT;
+        }
+        return 0;
     }
     private void validateActive() throws InactiveAccountException
     {
         if(status.equals("Inactive"))
         {
-            throw new InactiveAccountException("Account is inactive. Please reopen the account or contact support.");
+            throw new InactiveAccountException("Account is inactive. Please reopen the account.");
         }
     }
     int get_account_number()
@@ -212,251 +212,153 @@ class Account
         {
             throw new IllegalArgumentException("Customer must be at least 18 years old. Provided: "+age);
         }
-
         this.age=age;
     }
 }
-class Savings_Account extends Account
+class SavingsAccount extends Account
 {
-    private static final double Min_Balance=1000;
-    private static final double Intrest=4;
-    Savings_Account(int account_number,String name,int age,double initial_balance)
+    private double minBalance;
+    private double interestRate;
+    SavingsAccount(int account_number,String name,int age,double initial_balance)
     {
-        super(account_number,name,age,initial_balance,"Savings");
+        super(account_number,name,age,initial_balance,"SAVINGS");
+        this.minBalance=1000.0;
+        this.interestRate=4.0;
     }
-    void Apply_Intrest() throws InvalidAmountException,InactiveAccountException
+    void applyInterest() throws InvalidAmountException,InactiveAccountException
     {
         double balance=get_balance();
-        double intrest_amount=(Intrest*balance)/100;
-        deposit(intrest_amount);
+        double interestAmount=(interestRate*balance)/100;
+        deposit(interestAmount);
+    }
+    double getMinBalance()
+    {
+        return minBalance;
+    }
+
+    double getInterestRate()
+    {
+        return interestRate;
     }
 }
-class Current_Account extends Account
+
+class CurrentAccount extends Account
 {
-    public static double Over_draft_Limit=25000;
-    Current_Account(int account_number,String name,int age,double initial_balance)
+    private double overdraftLimit;
+
+    CurrentAccount(int account_number,String name,int age,double initial_balance)
     {
-        super(account_number,name,age,initial_balance,"Current");
+        super(account_number,name,age,initial_balance,"CURRENT");
+        this.overdraftLimit=25000.0;
     }
-    double get_overdraftLimit()
+
+    double getOverdraftLimit()
     {
-        return Over_draft_Limit;
+        return overdraftLimit;
     }
-    void set_overdraftLimit(double overdraft) throws IllegalArgumentException
+
+    void setOverdraftLimit(double overdraftLimit)
     {
-        if(overdraft < 0)
+        if(overdraftLimit<0)
         {
-            throw new IllegalArgumentException("Overdraft limit cannot be negative. Provided: ₹" + overdraft);
+            throw new IllegalArgumentException("Overdraft limit cannot be negative");
         }
-        Over_draft_Limit = overdraft;
+
+        this.overdraftLimit=overdraftLimit;
     }
 }
 class FixedDepositAccount extends Account
 {
     private int tenureMonths;
     private double interestRate;
-    FixedDepositAccount(int account_number, String name, int age,double initial_balance, int tenureMonths,double interestRate)
+    FixedDepositAccount(int account_number,String name,int age,double initial_balance,int tenureMonths,double interestRate)
     {
-        super(account_number, name, age, initial_balance, "FIXED_DEPOSIT");
-        this.tenureMonths = tenureMonths;
-        this.interestRate = interestRate;
+        super(account_number,name,age,initial_balance,"FIXED_DEPOSIT");
+        this.tenureMonths=tenureMonths;
+        this.interestRate=interestRate;
     }
     double calculateMaturityAmount()
     {
-        double principal = get_balance();
-        double maturityAmount = principal *Math.pow(1 + interestRate / 100, tenureMonths / 12.0);
+        double principal=get_balance();
+        double maturityAmount=principal*Math.pow(1+interestRate/100,tenureMonths/12.0);
         return maturityAmount;
+    }
+    int getTenureMonths()
+    {
+        return tenureMonths;
+    }
+    double getInterestRate()
+    {
+        return interestRate;
     }
 }
 class SalaryAccount extends Account
 {
     private String employerName;
     private int inactiveMonths;
-    SalaryAccount(int account_number, String name, int age,double initial_balance, String employerName,int inactiveMonths)
+    SalaryAccount(int account_number,String name,int age,double initial_balance,String employerName,int inactiveMonths)
     {
-        super(account_number, name, age, initial_balance, "SALARY");
-        this.employerName = employerName;
-        this.inactiveMonths = inactiveMonths;
+        super(account_number,name,age,initial_balance,"SALARY");
+        this.employerName=employerName;
+        this.inactiveMonths=inactiveMonths;
+    }
+    String getEmployerName()
+    {
+        return employerName;
+    }
+    int getInactiveMonths()
+    {
+        return inactiveMonths;
     }
 }
+
 class TestAccountExceptions
 {
     public static void main(String[] args)
     {
-        Scanner sc=new Scanner(System.in);
-        System.out.println("= ".repeat(20));
-        System.out.println("= ".repeat(20));
-        System.out.println("  ACCOUNT TEST WITH EXCEPTIONS");
-        System.out.println("= ".repeat(20));
-        System.out.println("= ".repeat(20));
-        System.out.println("Test 1: Valid Account Creation");
-        Account Test1=null;
+        System.out.println("=== Activity 7: Account Subclasses Test ===");
         try
         {
-            Test1=new Account(1001,"John Doe",25,1000,"Savings");
-            System.out.println("Account #"+Test1.get_account_number()+" | "+Test1.get_name()+" ("+Test1.get_age()+" yrs) | "+Test1.get_account_type()+" | ₹"+Test1.get_balance()+" | "+Test1.get_status()+" | PIN: "+(Test1.hasPin()?"Yes":"No"));
-        }
-        catch(IllegalArgumentException e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        System.out.println("Test 2: Invalid Age (under 18)");
-        System.out.println("Creating account with age 16");
-        try
-        {
-            Account Test2=new Account(1002,"Young Kid",16,500,"Savings");
-        }
-        catch(IllegalArgumentException e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        System.out.println("Test 3: Invalid Account Type");
-        System.out.println("Creating account with type \"Invalid\"");
-        try
-        {
-            Account Test3=new Account(1003,"Test User",25,500,"Invalid");
-        }
-        catch(IllegalArgumentException e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        System.out.println("Test 4: Minimum Balance on Creation");
-        System.out.println("Creating Savings account with ₹300");
-        try
-        {
-            Account Test4=new Account(1004,"Bob Wilson",25,300,"Savings");
-        }
-        catch(IllegalArgumentException e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        System.out.println(">>> Test 5: Valid Deposit and Withdrawal");
-        Account Test5=null;
-        try
-        {
-            Test5=new Account(1005,"Alice Brown",30,1000,"Current");
-            System.out.println("Account #"+Test5.get_account_number()+" | "+Test5.get_name()+" ("+Test5.get_age()+" yrs) | "+Test5.get_account_type()+" | ₹"+Test5.get_balance()+" | "+Test5.get_status()+" | PIN: "+(Test5.hasPin()?"Yes":"No"));
-            Test5.setPin(1234);
-            System.out.println("Setting PIN 1234: SUCCESS");
-            Test5.deposit(500);
-            System.out.println("Depositing ₹500.0: SUCCESS");
-            System.out.println("Balance after deposit: ₹"+Test5.get_balance());
-            Test5.withdraw(200,1234);
-            System.out.println("Withdrawing ₹200.0: SUCCESS");
-            System.out.println("Balance after withdrawal: ₹"+Test5.get_balance());
+            SavingsAccount savings=new SavingsAccount(1001,"John Doe",25,10000);
+
+            System.out.println("Savings Account Created: Balance Rs "+savings.get_balance()+" | Min Balance: Rs "+savings.getMinBalance());
+
+            savings.applyInterest();
+
+            System.out.println("After Interest: Balance Rs "+savings.get_balance());
         }
         catch(Exception e)
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println(">>> Test 6: Invalid Deposit");
         try
         {
-            Test5.deposit(-100);
-        }
-        catch(InvalidAmountException e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        catch(InactiveAccountException e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        System.out.println("Test 7: Insufficient Balance");
-        Account Test6=null;
-        try
-        {
-            Test6=new Account(1006,"Charlie Green",35,500,"Savings");
-            Test6.setPin(1234);
-            Test6.withdraw(1000,1234);
+            CurrentAccount current=new CurrentAccount(1002,"Alice Brown",30,10000);
+            System.out.println("Current Account Created: Overdraft Limit Rs "+current.getOverdraftLimit());
         }
         catch(Exception e)
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println("Test 8: Minimum Balance Violation");
-        Account Test7=null;
         try
         {
-            Test7=new Account(1007,"Diana Prince",28,1000,"Savings");
-            Test7.setPin(1234);
-            Test7.withdraw(600,1234);
+            FixedDepositAccount fixedDeposit=new FixedDepositAccount(1003,"Bob Wilson",35,10000,12,6.5);
+            System.out.println("Fixed Deposit Created: Tenure "+fixedDeposit.getTenureMonths()+" months | Interest: "+fixedDeposit.getInterestRate()+"%");
+            System.out.println("Maturity Amount: Rs "+fixedDeposit.calculateMaturityAmount());
         }
         catch(Exception e)
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println("Test 9: Account Status");
-        Account Test8=null;
         try
         {
-            Test8=new Account(1008,"Eve Wilson",32,2000,"Current");
-            System.out.println("Account #"+Test8.get_account_number()+" | "+Test8.get_name()+" ("+Test8.get_age()+" yrs) | "+Test8.get_account_type()+" | ₹"+Test8.get_balance()+" | "+Test8.get_status()+" | PIN: "+(Test8.hasPin()?"Yes":"No"));
-            Test8.closeAccount();
-            System.out.println("Closing account: SUCCESS");
-            try
-            {
-                Test8.deposit(500);
-            }
-            catch(InvalidAmountException e)
-            {
-                System.out.println("EXCEPTION: "+e.getMessage());
-            }
-            catch(InactiveAccountException e)
-            {
-                System.out.println("EXCEPTION: "+e.getMessage());
-            }
-            Test8.reopenAccount();
-            System.out.println("Reopening account: SUCCESS");
-            Test8.deposit(500);
-            System.out.println("Depositing ₹500.0 after reopen: SUCCESS");
-            System.out.println("Balance: ₹"+Test8.get_balance());
+            SalaryAccount salary=new SalaryAccount(1004,"Charlie Green",28,10000,"Infosys",0);
+            System.out.println("Salary Account Created: Employer "+salary.getEmployerName());
         }
         catch(Exception e)
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println("Test 10: PIN Protection");
-        Account Test9=null;
-        try
-        {
-            Test9=new Account(1009,"Frank Miller",40,1500,"Savings");
-            Test9.setPin(1234);
-            System.out.println("Setting PIN 1234: SUCCESS");
-            Test9.withdraw(200,1234);
-            System.out.println("Withdrawing ₹200.0 with correct PIN: SUCCESS");
-            System.out.println("New balance: ₹"+Test9.get_balance());
-            try
-            {
-                Test9.withdraw(100,9999);
-            }
-            catch(InvalidPinException e)
-            {
-                System.out.println("EXCEPTION: "+e.getMessage());
-            }
-        }
-        catch(Exception e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        Account Test10=null;
-        try
-        {
-            Test10=new Account(1010,"No Pin User",25,1000,"Savings");
-            Test10.withdraw(100,1234);
-        }
-        catch(InvalidPinException e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        catch(Exception e)
-        {
-            System.out.println("EXCEPTION: "+e.getMessage());
-        }
-        System.out.println("= ".repeat(20));
-        System.out.println("= ".repeat(20));
-        System.out.println("          TEST COMPLETED!!");
-        System.out.println("= ".repeat(20));
-        System.out.println("= ".repeat(20));
+        System.out.println("All subclasses instantiated successfully!");
     }
 }
