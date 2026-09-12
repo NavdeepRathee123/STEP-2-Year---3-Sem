@@ -330,7 +330,7 @@ class FixedDepositAccount extends Account
     }
 }
 class SalaryAccount extends Account
-{
+{   
     private String employerName;
     private int inactiveMonths;
     SalaryAccount(int account_number,String name,int age,double initial_balance,String employerName,int inactiveMonths)
