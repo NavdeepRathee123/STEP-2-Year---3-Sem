@@ -61,7 +61,7 @@ class Account
         {
             throw new IllegalArgumentException("Customer must be at least 18 years old. Provided: "+age);
         }
-        if(!account_type.equals("SAVINGS") && !account_type.equals("CURRENT") &&!account_type.equals("FIXED_DEPOSIT") &&!account_type.equals("SALARY"))
+        if(!account_type.equals("SAVINGS") && !account_type.equals("CURRENT") &&!account_type.equals("FIXED_DEPOSIT") && !account_type.equals("SALARY"))
         {
             throw new IllegalArgumentException("Invalid account type. Provided: "+account_type);
         }
@@ -89,12 +89,10 @@ class Account
     void deposit(double amount) throws InvalidAmountException,InactiveAccountException
     {
         validateActive();
-
         if(amount<=0)
         {
             throw new InvalidAmountException("Deposit amount must be positive. Provided: Rs "+amount);
         }
-
         balance+=amount;
     }
     void withdraw(double amount,int pin) throws InvalidAmountException,InsufficientBalanceException,MinimumBalanceViolationException,InactiveAccountException,InvalidPinException
@@ -235,36 +233,71 @@ class SavingsAccount extends Account
     {
         return minBalance;
     }
-
     double getInterestRate()
     {
         return interestRate;
     }
+    void withdraw(double amount,int pin) throws InvalidAmountException,InsufficientBalanceException,MinimumBalanceViolationException,InactiveAccountException,InvalidPinException
+    {
+        if(get_balance()-amount<minBalance)
+        {
+            throw new MinimumBalanceViolationException("Cannot withdraw. Minimum balance of Rs "+minBalance+" required.");
+        }
+        super.withdraw(amount,pin);
+    }
 }
-
 class CurrentAccount extends Account
 {
     private double overdraftLimit;
-
     CurrentAccount(int account_number,String name,int age,double initial_balance)
     {
         super(account_number,name,age,initial_balance,"CURRENT");
         this.overdraftLimit=25000.0;
     }
-
     double getOverdraftLimit()
     {
         return overdraftLimit;
     }
-
     void setOverdraftLimit(double overdraftLimit)
     {
         if(overdraftLimit<0)
         {
             throw new IllegalArgumentException("Overdraft limit cannot be negative");
         }
-
         this.overdraftLimit=overdraftLimit;
+    }
+    void withdraw(double amount,int pin) throws InvalidAmountException,InsufficientBalanceException,MinimumBalanceViolationException,InactiveAccountException,InvalidPinException
+    {
+        if(get_status().equals("Inactive"))
+        {
+            throw new InactiveAccountException("Account is inactive. Please reopen the account.");
+        }
+        if(!hasPin())
+        {
+            throw new InvalidPinException("PIN not set for this account");
+        }
+        if(!verifyPin(pin))
+        {
+            throw new InvalidPinException("Incorrect PIN");
+        }
+        if(amount<=0)
+        {
+            throw new InvalidAmountException("Withdrawal amount must be positive. Provided: Rs "+amount);
+        }
+        if(amount>get_balance()+overdraftLimit)
+        {
+            throw new InsufficientBalanceException("Insufficient balance. Available including overdraft: Rs "+(get_balance()+overdraftLimit)+", Requested: Rs "+amount);
+        }
+        try
+        {
+            java.lang.reflect.Field field=Account.class.getDeclaredField("balance");
+            field.setAccessible(true);
+            field.setDouble(this,get_balance()-amount);
+        }
+        catch(Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }
 class FixedDepositAccount extends Account
@@ -291,6 +324,10 @@ class FixedDepositAccount extends Account
     {
         return interestRate;
     }
+    void withdraw(double amount,int pin) throws AccountException
+    {
+        throw new AccountException("Premature withdrawals are not permitted on Fixed Deposit accounts before maturity.");
+    }
 }
 class SalaryAccount extends Account
 {
@@ -311,21 +348,21 @@ class SalaryAccount extends Account
         return inactiveMonths;
     }
 }
-
 class TestAccountExceptions
 {
     public static void main(String[] args)
     {
-        System.out.println("=== Activity 7: Account Subclasses Test ===");
+        System.out.println("=== Activity 8: Polymorphism Test ===");
         try
         {
             SavingsAccount savings=new SavingsAccount(1001,"John Doe",25,10000);
-
-            System.out.println("Savings Account Created: Balance Rs "+savings.get_balance()+" | Min Balance: Rs "+savings.getMinBalance());
-
-            savings.applyInterest();
-
-            System.out.println("After Interest: Balance Rs "+savings.get_balance());
+            savings.setPin(1234);
+            savings.withdraw(9500,1234);
+            System.out.println("[Savings] Withdraw 9500 (breaches min balance 1000): SUCCESS");
+        }
+        catch(MinimumBalanceViolationException e)
+        {
+            System.out.println("[Savings] Withdraw 9500 (breaches min balance 1000): Caught MinimumBalanceViolationException [PASS]");
         }
         catch(Exception e)
         {
@@ -334,7 +371,9 @@ class TestAccountExceptions
         try
         {
             CurrentAccount current=new CurrentAccount(1002,"Alice Brown",30,10000);
-            System.out.println("Current Account Created: Overdraft Limit Rs "+current.getOverdraftLimit());
+            current.setPin(1234);
+            current.withdraw(15000,1234);
+            System.out.println("[Current] Withdraw with Overdraft (Balance goes to -5000): SUCCESS [PASS]");
         }
         catch(Exception e)
         {
@@ -342,9 +381,14 @@ class TestAccountExceptions
         }
         try
         {
-            FixedDepositAccount fixedDeposit=new FixedDepositAccount(1003,"Bob Wilson",35,10000,12,6.5);
-            System.out.println("Fixed Deposit Created: Tenure "+fixedDeposit.getTenureMonths()+" months | Interest: "+fixedDeposit.getInterestRate()+"%");
-            System.out.println("Maturity Amount: Rs "+fixedDeposit.calculateMaturityAmount());
+            CurrentAccount current=new CurrentAccount(1003,"Alice Brown",30,10000);
+            current.setPin(1234);
+            current.withdraw(35000,1234);
+            System.out.println("[Current] Withdraw exceeding Overdraft (exceeds -25000): SUCCESS");
+        }
+        catch(InsufficientBalanceException e)
+        {
+            System.out.println("[Current] Withdraw exceeding Overdraft (exceeds -25000): Caught InsufficientBalanceException [PASS]");
         }
         catch(Exception e)
         {
@@ -352,13 +396,19 @@ class TestAccountExceptions
         }
         try
         {
-            SalaryAccount salary=new SalaryAccount(1004,"Charlie Green",28,10000,"Infosys",0);
-            System.out.println("Salary Account Created: Employer "+salary.getEmployerName());
+            FixedDepositAccount fixedDeposit=new FixedDepositAccount(1004,"Bob Wilson",35,10000,12,6.5);
+            fixedDeposit.setPin(1234);
+            fixedDeposit.withdraw(5000,1234);
+            System.out.println("[FixedDeposit] Withdraw attempt: SUCCESS");
+        }
+        catch(AccountException e)
+        {
+            System.out.println("[FixedDeposit] Withdraw attempt: Caught AccountException [PASS]");
         }
         catch(Exception e)
         {
             System.out.println("EXCEPTION: "+e.getMessage());
         }
-        System.out.println("All subclasses instantiated successfully!");
+        System.out.println("All polymorphic behaviors verified!");
     }
 }
