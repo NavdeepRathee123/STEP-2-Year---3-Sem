@@ -36,7 +36,7 @@ public class TestAccountRulesEngine
 
         System.out.println(
             " -> Interest Rate: "
-            + savings.getInterestRate(
+            + savings.getInterestRate()
             + "% (Dynamically fetched)"
         );
 

@@ -1,78 +1,147 @@
 package com.gdb.domain;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class AccountRulesEngine
 {
-    private static final Map<String, Double> MIN_BALANCE_RULES = new HashMap<>();
-    private static final Map<String, Double> INTEREST_RATE_RULES = new HashMap<>();
+    private static final String SAVINGS_FILE =
+        "src/main/resources/config/rules/savings.properties";
 
-    static
+    private static final String CURRENT_FILE =
+        "src/main/resources/config/rules/current.properties";
+
+    private static final String FD_FILE =
+        "src/main/resources/config/rules/fixeddeposit.properties";
+
+    private static final String SALARY_FILE =
+        "src/main/resources/config/rules/salary.properties";
+
+    private static AccountRulesPropertiesLoader
+        load(String filePath)
     {
-        MIN_BALANCE_RULES.put("NEW", 10000.0);
-        MIN_BALANCE_RULES.put("STANDARD", 7500.0);
-        MIN_BALANCE_RULES.put("PREMIUM", 5000.0);
-        MIN_BALANCE_RULES.put("PRIVILEGE", 2500.0);
-
-        INTEREST_RATE_RULES.put("NEW", 2.70);
-        INTEREST_RATE_RULES.put("STANDARD", 3.00);
-        INTEREST_RATE_RULES.put("PREMIUM", 3.50);
-        INTEREST_RATE_RULES.put("PRIVILEGE", 4.00);
+        return new AccountRulesPropertiesLoader(filePath);
     }
 
-    private static String getTenureTier(int tenureYears)
+    private static String getSavingsTier(int tenureYears)
     {
         if(tenureYears >= 5)
         {
-            return "PRIVILEGE";
+            return "privilege";
         }
         else if(tenureYears >= 3)
         {
-            return "PREMIUM";
+            return "premium";
         }
         else if(tenureYears >= 1)
         {
-            return "STANDARD";
+            return "standard";
         }
         else
         {
-            return "NEW";
+            return "new";
         }
     }
 
-    public static double getSavingsMinBalance(int tenureYears)
+    public static double getSavingsMinBalance(
+        int tenureYears)
     {
-        return MIN_BALANCE_RULES.get(getTenureTier(tenureYears));
+        AccountRulesPropertiesLoader loader =
+            load(SAVINGS_FILE);
+
+        String tier = getSavingsTier(tenureYears);
+
+        return loader.getDouble(
+            "savings.min_balance." + tier,
+            10000.0
+        );
     }
 
-    public static double getSavingsInterestRate(int tenureYears)
+    public static double getSavingsInterestRate(
+        int tenureYears)
     {
-        return INTEREST_RATE_RULES.get(getTenureTier(tenureYears));
+        AccountRulesPropertiesLoader loader =
+            load(SAVINGS_FILE);
+
+        String tier = getSavingsTier(tenureYears);
+
+        return loader.getDouble(
+            "savings.interest_rate." + tier,
+            2.70
+        );
     }
 
-    public static double getCurrentOverdraftLimit(double monthlyTurnover)
+    public static double getCurrentOverdraftLimit(
+        double monthlyTurnover)
     {
-        return Math.max(25000.0, monthlyTurnover * 2.5);
+        AccountRulesPropertiesLoader loader =
+            load(CURRENT_FILE);
+
+        double multiplier =
+            loader.getDouble(
+                "current.overdraft.multiplier",
+                2.5
+            );
+
+        double minimum =
+            loader.getDouble(
+                "current.overdraft.minimum",
+                25000.0
+            );
+
+        return Math.max(
+            minimum,
+            monthlyTurnover * multiplier
+        );
     }
 
-    public static double getFDInterestRate(int months)
+    public static double getFDInterestRate(
+        int months)
     {
+        AccountRulesPropertiesLoader loader =
+            load(FD_FILE);
+
         if(months >= 12)
         {
-            return 6.5;
+            return loader.getDouble(
+                "fixeddeposit.interest_rate.12",
+                6.5
+            );
         }
         else if(months >= 6)
         {
-            return 6.0;
+            return loader.getDouble(
+                "fixeddeposit.interest_rate.6",
+                6.0
+            );
         }
         else if(months >= 3)
         {
-            return 5.5;
+            return loader.getDouble(
+                "fixeddeposit.interest_rate.3",
+                5.5
+            );
         }
-        else
-        {
-            return 5.0;
-        }
+
+        return 5.0;
+    }
+
+    public static double getSalaryMinimumBalance()
+    {
+        AccountRulesPropertiesLoader loader =
+            load(SALARY_FILE);
+
+        return loader.getDouble(
+            "salary.minimum.balance",
+            0.0
+        );
+    }
+
+    public static int getSalaryInactiveMonths()
+    {
+        AccountRulesPropertiesLoader loader =
+            load(SALARY_FILE);
+
+        return (int) loader.getDouble(
+            "salary.inactive.months",
+            3
+        );
     }
 }
