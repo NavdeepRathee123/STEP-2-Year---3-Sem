@@ -9,6 +9,24 @@ public class AccountFactory
         int age,
         double balance)
     {
+        return createAccount(
+            type,
+            accountNumber,
+            customerName,
+            age,
+            balance,
+            0
+        );
+    }
+
+    public static AbstractAccount createAccount(
+        String type,
+        int accountNumber,
+        String customerName,
+        int age,
+        double balance,
+        int tenureYears)
+    {
         if(type == null)
         {
             throw new IllegalArgumentException(
@@ -23,7 +41,8 @@ public class AccountFactory
                     accountNumber,
                     customerName,
                     age,
-                    balance
+                    balance,
+                    tenureYears
                 );
 
             case "CURRENT":
@@ -93,7 +112,8 @@ public class AccountFactory
             accountNumber,
             customerName,
             age,
-            balance
+            balance,
+            0
         );
     }
 
@@ -131,7 +151,8 @@ public class AccountFactory
             accountNumber,
             customerName,
             age,
-            balance
+            balance,
+            0
         );
     }
 }

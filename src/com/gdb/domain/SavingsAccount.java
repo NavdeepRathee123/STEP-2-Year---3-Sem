@@ -6,31 +6,40 @@ public class SavingsAccount extends AbstractAccount
 {
     private double interestRate;
     private double minBalance;
-
-    public SavingsAccount(
-        int account_number,
-        String customer_name,
-        int age,
-        double balance)
-    {
-        super(account_number, customer_name, age, balance);
-
-        this.interestRate = 4.0;
-        this.minBalance = 1000.0;
-    }
+    private int tenureYears;
 
     public SavingsAccount(
         int account_number,
         String customer_name,
         int age,
         double balance,
-        double interestRate,
-        double minBalance)
+        int tenureYears)
     {
         super(account_number, customer_name, age, balance);
 
-        this.interestRate = interestRate;
-        this.minBalance = minBalance;
+        this.tenureYears = tenureYears;
+
+        this.minBalance =
+            AccountRulesEngine.getSavingsMinBalance(tenureYears);
+
+        this.interestRate =
+            AccountRulesEngine.getSavingsInterestRate(tenureYears);
+    }
+
+    // Kept for compatibility with previous activities
+    public SavingsAccount(
+        int account_number,
+        String customer_name,
+        int age,
+        double balance)
+    {
+        this(
+            account_number,
+            customer_name,
+            age,
+            balance,
+            0
+        );
     }
 
     @Override
@@ -41,7 +50,8 @@ public class SavingsAccount extends AbstractAccount
         {
             throw new MinimumBalanceViolationException(
                 "Cannot withdraw. Minimum balance of Rs "
-                + minBalance + " must be maintained"
+                + minBalance
+                + " must be maintained"
             );
         }
 
@@ -72,5 +82,10 @@ public class SavingsAccount extends AbstractAccount
     public double getInterestRate()
     {
         return interestRate;
+    }
+
+    public int getTenureYears()
+    {
+        return tenureYears;
     }
 }
