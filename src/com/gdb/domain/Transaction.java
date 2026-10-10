@@ -2,8 +2,9 @@
 package com.gdb.domain;
 
 import java.time.LocalDateTime;
+import java.io.Serializable;
 
-public class Transaction
+public class Transaction implements Serializable
 {
     private String transactionId;
     private LocalDateTime timestamp;
@@ -17,6 +18,7 @@ public class Transaction
     private int toAccount;
 
     private static long counter = 0;
+    private static final long serialVersionUID = 1L;
 
     public Transaction(
         String transactionId,

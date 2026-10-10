@@ -3,8 +3,9 @@ package com.gdb.domain;
 
 import com.gdb.exceptions.*;
 import java.time.LocalDateTime;
+import java.io.Serializable;
 
-public abstract class AbstractAccount implements IAccount
+public abstract class AbstractAccount implements IAccount,Serializable
 {
     protected int account_number;
     protected String customer_name;
