@@ -144,4 +144,81 @@ public class AccountRulesEngine
             3
         );
     }
+private static String getTenureTier(int tenureYears)
+{
+     if(tenureYears >= 5)
+     {
+        return "privilege";
+     }
+     else if(tenureYears >= 3)
+     {
+       return "premium";
+     }
+        else if(tenureYears >= 1)
+        {
+            return "standard";
+        }
+
+        return "new";
+    }
+    // Activity 15: Fetch the daily transfer limit
+public static double getDailyTransferLimit(String accountType, int tenureYears)
+{
+    if(accountType == null)
+    {
+       return 0.0;
+    }
+    String type = accountType.toLowerCase();
+    if(type.contains("savings"))
+    {
+        type = "savings";
+    }
+    else if(type.contains("current"))
+    {
+        type = "current";
+    }
+    else if(type.contains("fixeddeposit"))
+    {
+        type = "fixeddeposit";
+    }
+    else if(type.contains("salary"))
+    {
+        type = "salary";
+    }
+    else
+    {
+        return 0.0;
+    }
+
+    String tier = getTenureTier(tenureYears);
+    String file;
+
+    switch(type)
+    {
+        case "savings":
+            file = SAVINGS_FILE;
+          break;
+
+        case "current":
+            file = CURRENT_FILE;
+            break;
+
+        case "fixeddeposit":
+            file = FD_FILE;
+            break;
+
+        case "salary":
+            file = SALARY_FILE;
+            break;
+
+        default:
+            return 0.0;
+    }
+
+    AccountRulesPropertiesLoader loader = load(file);
+
+    String key = type + ".daily.transfer.limit." + tier;
+
+    return loader.getDouble(key, 0.0);
+}
 }

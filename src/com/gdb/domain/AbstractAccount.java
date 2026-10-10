@@ -1,6 +1,8 @@
+
 package com.gdb.domain;
 
 import com.gdb.exceptions.*;
+import java.time.LocalDateTime;
 
 public abstract class AbstractAccount implements IAccount
 {
@@ -10,6 +12,10 @@ public abstract class AbstractAccount implements IAccount
     protected double balance;
     protected String status;
     protected String pin;
+
+    // Activity 15: Daily transfer tracking
+    protected double dailyTransferTotal = 0.0;
+    protected LocalDateTime lastTransferDate = LocalDateTime.now();
 
     public AbstractAccount(
         int account_number,
@@ -23,6 +29,83 @@ public abstract class AbstractAccount implements IAccount
         this.balance = balance;
         this.status = "ACTIVE";
         this.pin = null;
+    }
+
+    // Activity 15: Account status and PIN checks
+    public boolean isActive()
+    {
+        return "ACTIVE".equalsIgnoreCase(status);
+    }
+
+    public boolean verifyPin(String suppliedPin)
+    {
+        return isValidPin(suppliedPin);
+    }
+
+    public boolean canWithdraw(double amount)
+    {
+        return amount > 0 && amount <= balance;
+    }
+
+    // Default tenure; SavingsAccount overrides this.
+    public int getTenureYears()
+    {
+        return 0;
+    }
+
+    public double getDailyTransferTotal()
+    {
+        resetDailyTransferIfNeeded();
+        return dailyTransferTotal;
+    }
+
+    public LocalDateTime getLastTransferDate()
+    {
+        return lastTransferDate;
+    }
+
+    public double getDailyTransferLimit()
+    {
+        return AccountRulesEngine.getDailyTransferLimit(
+            get_account_type(), getTenureYears()
+        );
+    }
+
+    public double getRemainingDailyTransferLimit()
+    {
+        resetDailyTransferIfNeeded();
+
+        return Math.max(
+            0.0,
+            getDailyTransferLimit() - dailyTransferTotal
+        );
+    }
+
+    public boolean canTransfer(double amount)
+    {
+        resetDailyTransferIfNeeded();
+
+        return amount > 0 &&
+            dailyTransferTotal + amount <= getDailyTransferLimit();
+    }
+
+    public void updateDailyTransferTotal(double amount)
+    {
+        resetDailyTransferIfNeeded();
+
+        dailyTransferTotal += amount;
+        lastTransferDate = LocalDateTime.now();
+    }
+
+    public void resetDailyTransferIfNeeded()
+    {
+        if(lastTransferDate == null ||
+           !lastTransferDate.toLocalDate().equals(
+               LocalDateTime.now().toLocalDate()))
+        {
+            dailyTransferTotal = 0.0;
+            lastTransferDate = LocalDateTime.now();
+        }
     }
 
     @Override
