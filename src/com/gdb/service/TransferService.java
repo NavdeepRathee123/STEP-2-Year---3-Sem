@@ -4,6 +4,8 @@ package com.gdb.service;
 import com.gdb.domain.AbstractAccount;
 import com.gdb.domain.IAccount;
 import com.gdb.exceptions.*;
+import com.gdb.domain.Transaction;
+import com.gdb.domain.TransactionType;
 
 public class TransferService
 {
@@ -77,4 +79,32 @@ public class TransferService
         // STEP 8: Record the successful transfer
         source.updateDailyTransferTotal(amount);
     }
+
+// Activity 16 - STEP 9: Transfer and return a transaction record
+public Transaction transferWithTransaction(
+    IAccount from,
+    IAccount to,
+    double amount,
+    int pin) throws AccountException
+{
+    // Reuse the existing transfer workflow
+    transfer(from, to, amount, String.valueOf(pin));
+
+    AbstractAccount source = (AbstractAccount) from;
+    AbstractAccount destination = (AbstractAccount) to;
+
+    return new Transaction(
+        Transaction.generateId(),
+        java.time.LocalDateTime.now(),
+        source.get_account_number(),
+        TransactionType.TRANSFER,
+        amount,
+        source.get_balance(),
+        "SUCCESS",
+        "Transfer of Rs. " + amount
+            + " to Account #" + destination.get_account_number(),
+        source.get_account_number(),
+        destination.get_account_number()
+    );
+}
 }

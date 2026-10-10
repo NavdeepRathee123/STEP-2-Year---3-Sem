@@ -219,4 +219,44 @@ public abstract class AbstractAccount implements IAccount
         System.out.println("Account Type: " + get_account_type());
         System.out.println("Status: " + status);
     }
+
+    // Activity 16 - STEP 7: Deposit and return a transaction record
+    public Transaction depositWithTransaction(double amount)
+        throws InvalidAmountException
+    {
+        deposit(amount);
+
+        return new Transaction(
+            Transaction.generateId(),
+            java.time.LocalDateTime.now(),
+            get_account_number(),
+            TransactionType.DEPOSIT,
+            amount,
+            get_balance(),
+            "SUCCESS",
+            "Deposit of Rs. " + amount,
+            0,
+            get_account_number()
+        );
+    }
+
+// Activity 16 - STEP 8: Withdraw and return a transaction record
+public Transaction withdrawWithTransaction(double amount, int pin)
+    throws AccountException
+{
+    withdraw(amount, pin);
+
+    return new Transaction(
+        Transaction.generateId(),
+        java.time.LocalDateTime.now(),
+        get_account_number(),
+        TransactionType.WITHDRAW,
+        amount,
+        get_balance(),
+        "SUCCESS",
+        "Withdrawal of Rs. " + amount,
+        get_account_number(),
+        0
+    );
+}
 }
