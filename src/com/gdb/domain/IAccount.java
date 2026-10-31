@@ -2,9 +2,10 @@ package com.gdb.domain;
 
 import com.gdb.exceptions.AccountException;
 import com.gdb.exceptions.InvalidAmountException;
+import com.gdb.exceptions.InvalidPinException;
 
-public interface IAccount
-{
+public interface IAccount {
+
     int get_account_number();
 
     String get_customer_name();
@@ -20,4 +21,8 @@ public interface IAccount
     void withdraw(double amount, String pin) throws AccountException;
 
     void displayAccountInfo();
+
+    void setPin(int pin) throws InvalidPinException;
+
+    String getAccountInfo();
 }

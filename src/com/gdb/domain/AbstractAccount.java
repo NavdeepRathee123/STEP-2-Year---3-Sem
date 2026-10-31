@@ -260,4 +260,13 @@ public Transaction withdrawWithTransaction(double amount, int pin)
         0
     );
 }
+@Override
+public String getAccountInfo() {
+    return "Account #" + account_number +
+            " | " + customer_name +
+            " (" + age + " yrs)" +
+            " | " + get_account_type() +
+            " | Rs. " + balance +
+            " | " + status;
+}
 }
