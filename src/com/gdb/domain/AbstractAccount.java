@@ -269,4 +269,15 @@ public String getAccountInfo() {
             " | Rs. " + balance +
             " | " + status;
 }
+// Activity 23: Getters required for JDBC persistence
+
+public int getAge()
+{
+    return age;
+}
+
+public String getPinValue()
+{
+    return pin;
+}
 }

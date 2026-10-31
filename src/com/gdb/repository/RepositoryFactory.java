@@ -7,24 +7,40 @@ import com.gdb.db.SchemaInitializer;
 import java.io.*;
 import java.util.Properties;
 
-/**
- * Factory creating repositories based on persistence configuration.
- */
 public class RepositoryFactory {
 
-    private static AccountRepository accountRepositoryInstance;
+    private static AccountRepository accountRepository;
 
-    private static TransactionRepository transactionRepositoryInstance;
+    private static TransactionRepository transactionRepository;
 
-    private static ConnectionProvider connectionProviderInstance;
+    private static ConnectionProvider connectionProvider;
+
 
     public static Properties loadPersistenceProperties() {
 
-        Properties props = new Properties();
+        Properties properties = new Properties();
+
+        try (
+            InputStream input =
+                RepositoryFactory.class.getClassLoader()
+                .getResourceAsStream("config/persistence.properties")
+        ) {
+
+            if (input != null) {
+
+                properties.load(input);
+                return properties;
+            }
+
+        } catch (IOException e) {
+
+            throw new RuntimeException(e);
+        }
+
 
         String[] paths = {
-            "config/persistence.properties",
             "src/main/resources/config/persistence.properties",
+            "config/persistence.properties",
             "bin/config/persistence.properties"
         };
 
@@ -37,33 +53,19 @@ public class RepositoryFactory {
                 try (InputStream input =
                         new FileInputStream(file)) {
 
-                    props.load(input);
-
-                    return props;
+                    properties.load(input);
+                    return properties;
 
                 } catch (IOException e) {
 
-                    throw new RuntimeException(
-                            "Unable to load persistence properties", e);
+                    throw new RuntimeException(e);
                 }
             }
         }
 
-        try (InputStream input =
-                RepositoryFactory.class.getClassLoader()
-                .getResourceAsStream("config/persistence.properties")) {
-
-            if (input != null) {
-                props.load(input);
-            }
-
-        } catch (IOException e) {
-
-            throw new RuntimeException(e);
-        }
-
-        return props;
+        return properties;
     }
+
 
     public static String getPersistenceMode() {
 
@@ -73,102 +75,83 @@ public class RepositoryFactory {
                 .toLowerCase();
     }
 
-    /**
-     * Activity 22: Initialize JDBC connection provider.
-     */
+
     public static synchronized ConnectionProvider getConnectionProvider() {
 
-        if (connectionProviderInstance == null) {
+        if (connectionProvider == null) {
 
-            Properties props = loadPersistenceProperties();
+            Properties properties =
+                loadPersistenceProperties();
 
-            String url = props.getProperty(
-                    "persistence.db.url",
-                    "jdbc:sqlite:gdb.db");
+            String url = properties.getProperty(
+                "persistence.db.url",
+                "jdbc:sqlite:gdb.db"
+            );
 
-            String driver = props.getProperty(
-                    "persistence.db.driver",
-                    "org.sqlite.JDBC");
+            String driver = properties.getProperty(
+                "persistence.db.driver",
+                "org.sqlite.JDBC"
+            );
 
-            connectionProviderInstance =
-                    new JdbcConnectionProvider(url, driver);
+            connectionProvider =
+                new JdbcConnectionProvider(url, driver);
 
-            SchemaInitializer.initialize(
-                    connectionProviderInstance);
+            SchemaInitializer.initialize(connectionProvider);
         }
 
-        return connectionProviderInstance;
+        return connectionProvider;
     }
+
 
     public static synchronized AccountRepository getAccountRepository() {
 
-        if (accountRepositoryInstance == null) {
+        if (accountRepository == null) {
 
             String mode = getPersistenceMode();
 
-            if ("memory".equals(mode)) {
+            if ("jdbc".equals(mode)) {
 
-                accountRepositoryInstance =
-                        new InMemoryAccountRepository();
-
-            } else if ("jdbc".equals(mode)) {
-
-                getConnectionProvider();
-
-                throw new UnsupportedOperationException(
-                        "JdbcAccountRepository will be implemented "
-                        + "in Activity 23.");
+                accountRepository =
+                    new JdbcAccountRepository(
+                        getConnectionProvider()
+                    );
 
             } else {
 
-                accountRepositoryInstance =
-                        new InMemoryAccountRepository();
+                accountRepository =
+                    new InMemoryAccountRepository();
             }
         }
 
-        return accountRepositoryInstance;
+        return accountRepository;
     }
+
 
     public static synchronized TransactionRepository getTransactionRepository() {
 
-        if (transactionRepositoryInstance == null) {
+        if (transactionRepository == null) {
 
-            String mode = getPersistenceMode();
+            // JDBC transaction repository will be implemented in Activity 24.
 
-            if ("memory".equals(mode)) {
-
-                transactionRepositoryInstance =
-                        new InMemoryTransactionRepository();
-
-            } else if ("jdbc".equals(mode)) {
-
-                getConnectionProvider();
-
-                throw new UnsupportedOperationException(
-                        "JdbcTransactionRepository will be implemented "
-                        + "in Activity 24.");
-
-            } else {
-
-                transactionRepositoryInstance =
-                        new InMemoryTransactionRepository();
-            }
+            transactionRepository =
+                new InMemoryTransactionRepository();
         }
 
-        return transactionRepositoryInstance;
+        return transactionRepository;
     }
+
 
     public static synchronized void reset() {
 
-        if (connectionProviderInstance != null) {
+        if (connectionProvider != null) {
 
-            connectionProviderInstance.shutdown();
+            connectionProvider.shutdown();
 
-            connectionProviderInstance = null;
+            connectionProvider = null;
         }
 
-        accountRepositoryInstance = null;
+        accountRepository = null;
 
-        transactionRepositoryInstance = null;
+        transactionRepository = null;
     }
 }
