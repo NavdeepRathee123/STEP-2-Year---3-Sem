@@ -1,3 +1,4 @@
+
 package com.gdb.repository;
 
 import com.gdb.domain.Transaction;
@@ -12,4 +13,14 @@ public interface TransactionRepository {
     List<Transaction> findAll();
 
     void clear();
+
+    default void transfer(
+        int fromAccountNumber,
+        int toAccountNumber,
+        double amount
+    ) {
+        throw new UnsupportedOperationException(
+            "Transfer is not supported by this repository"
+        );
+    }
 }

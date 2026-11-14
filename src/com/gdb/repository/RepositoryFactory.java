@@ -1,3 +1,4 @@
+
 package com.gdb.repository;
 
 import com.gdb.db.ConnectionProvider;
@@ -10,37 +11,17 @@ import java.util.Properties;
 public class RepositoryFactory {
 
     private static AccountRepository accountRepository;
-
     private static TransactionRepository transactionRepository;
-
     private static ConnectionProvider connectionProvider;
 
-
+    // Load configuration
     public static Properties loadPersistenceProperties() {
 
         Properties properties = new Properties();
 
-        try (
-            InputStream input =
-                RepositoryFactory.class.getClassLoader()
-                .getResourceAsStream("config/persistence.properties")
-        ) {
-
-            if (input != null) {
-
-                properties.load(input);
-                return properties;
-            }
-
-        } catch (IOException e) {
-
-            throw new RuntimeException(e);
-        }
-
-
         String[] paths = {
-            "src/main/resources/config/persistence.properties",
             "config/persistence.properties",
+            "src/main/resources/config/persistence.properties",
             "bin/config/persistence.properties"
         };
 
@@ -48,17 +29,18 @@ public class RepositoryFactory {
 
             File file = new File(path);
 
-            if (file.exists()) {
+            if (file.isFile()) {
 
                 try (InputStream input =
-                        new FileInputStream(file)) {
+                         new FileInputStream(file)) {
 
                     properties.load(input);
                     return properties;
 
                 } catch (IOException e) {
-
-                    throw new RuntimeException(e);
+                    throw new RuntimeException(
+                        "Unable to load persistence properties", e
+                    );
                 }
             }
         }
@@ -66,17 +48,18 @@ public class RepositoryFactory {
         return properties;
     }
 
-
+    // Get persistence mode
     public static String getPersistenceMode() {
 
         return loadPersistenceProperties()
-                .getProperty("persistence.mode", "memory")
-                .trim()
-                .toLowerCase();
+            .getProperty("persistence.mode", "memory")
+            .trim()
+            .toLowerCase();
     }
 
-
-    public static synchronized ConnectionProvider getConnectionProvider() {
+    // Get JDBC connection provider
+    public static synchronized ConnectionProvider
+            getConnectionProvider() {
 
         if (connectionProvider == null) {
 
@@ -102,8 +85,9 @@ public class RepositoryFactory {
         return connectionProvider;
     }
 
-
-    public static synchronized AccountRepository getAccountRepository() {
+    // Get account repository
+    public static synchronized AccountRepository
+            getAccountRepository() {
 
         if (accountRepository == null) {
 
@@ -126,32 +110,40 @@ public class RepositoryFactory {
         return accountRepository;
     }
 
-
-    public static synchronized TransactionRepository getTransactionRepository() {
+    // Get transaction repository
+    public static synchronized TransactionRepository
+            getTransactionRepository() {
 
         if (transactionRepository == null) {
 
-            // JDBC transaction repository will be implemented in Activity 24.
+            String mode = getPersistenceMode();
 
-            transactionRepository =
-                new InMemoryTransactionRepository();
+            if ("jdbc".equals(mode)) {
+
+                transactionRepository =
+                    new JdbcTransactionRepository(
+                        getConnectionProvider()
+                    );
+
+            } else {
+
+                transactionRepository =
+                    new InMemoryTransactionRepository();
+            }
         }
 
         return transactionRepository;
     }
 
-
+    // Reset repository instances
     public static synchronized void reset() {
 
         if (connectionProvider != null) {
-
             connectionProvider.shutdown();
-
             connectionProvider = null;
         }
 
         accountRepository = null;
-
         transactionRepository = null;
     }
 }

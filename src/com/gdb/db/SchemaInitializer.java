@@ -1,74 +1,57 @@
+
 package com.gdb.db;
 
-import java.io.*;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.sql.SQLException;
 
-/**
- * Initializes the database schema by executing schema.sql.
- */
-public class SchemaInitializer {
+import com.gdb.exceptions.DataAccessException;
+
+public final class SchemaInitializer {
+
+    private SchemaInitializer() {
+    }
 
     public static void initialize(ConnectionProvider provider) {
 
-        String schema = readSchemaSql();
+        String accounts =
+            "CREATE TABLE IF NOT EXISTS accounts (" +
+            "account_number INTEGER PRIMARY KEY, " +
+            "customer_name TEXT NOT NULL, " +
+            "age INTEGER NOT NULL, " +
+            "balance REAL NOT NULL, " +
+            "account_type TEXT NOT NULL, " +
+            "status TEXT NOT NULL, " +
+            "pin TEXT" +
+            ")";
 
-        String[] statements = schema.split(";");
+        String transactions =
+            "CREATE TABLE IF NOT EXISTS transactions (" +
+            "id TEXT PRIMARY KEY, " +
+            "timestamp TEXT NOT NULL, " +
+            "account_number INTEGER NOT NULL, " +
+            "type TEXT NOT NULL, " +
+            "amount REAL NOT NULL, " +
+            "balance_after REAL NOT NULL, " +
+            "status TEXT NOT NULL, " +
+            "remarks TEXT, " +
+            "from_account INTEGER NOT NULL DEFAULT 0, " +
+            "to_account INTEGER NOT NULL DEFAULT 0" +
+            ")";
 
         try (
-            Connection connection = provider.getConnection();
-            Statement statement = connection.createStatement()
+            Connection conn = provider.getConnection();
+            Statement stmt = conn.createStatement()
         ) {
 
-            for (String sql : statements) {
+            stmt.execute(accounts);
+            stmt.execute(transactions);
 
-                if (!sql.trim().isEmpty()) {
+        } catch (SQLException e) {
 
-                    statement.execute(sql.trim());
-                }
-            }
-
-        } catch (Exception e) {
-
-            throw new RuntimeException(
-                    "Database schema initialization failed", e);
+            throw new DataAccessException(
+                "Unable to initialize database schema", e
+            );
         }
-    }
-
-    public static String readSchemaSql() {
-
-        StringBuilder content = new StringBuilder();
-
-        InputStream input = SchemaInitializer.class
-                .getClassLoader()
-                .getResourceAsStream("schema.sql");
-
-        try {
-
-            if (input == null) {
-
-                input = new FileInputStream(
-                        "src/main/resources/schema.sql");
-            }
-
-            BufferedReader reader =
-                    new BufferedReader(new InputStreamReader(input));
-
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-
-                content.append(line).append("\n");
-            }
-
-            reader.close();
-
-        } catch (IOException e) {
-
-            throw new RuntimeException(
-                    "Unable to read schema.sql", e);
-        }
-
-        return content.toString();
     }
 }
