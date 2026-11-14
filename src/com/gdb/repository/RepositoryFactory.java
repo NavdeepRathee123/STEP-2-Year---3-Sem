@@ -1,6 +1,6 @@
 
 package com.gdb.repository;
-
+import com.gdb.db.HikariConnectionProvider;
 import com.gdb.db.ConnectionProvider;
 import com.gdb.db.JdbcConnectionProvider;
 import com.gdb.db.SchemaInitializer;
@@ -58,32 +58,48 @@ public class RepositoryFactory {
     }
 
     // Get JDBC connection provider
-    public static synchronized ConnectionProvider
-            getConnectionProvider() {
+    
 
-        if (connectionProvider == null) {
+public static synchronized ConnectionProvider getConnectionProvider() {
 
-            Properties properties =
-                loadPersistenceProperties();
+    if (connectionProvider == null) {
 
-            String url = properties.getProperty(
+        Properties props = loadPersistenceProperties();
+
+        boolean poolEnabled = Boolean.parseBoolean(
+            props.getProperty(
+                "persistence.pool.enabled",
+                "false"
+            )
+        );
+
+        if (poolEnabled) {
+
+            connectionProvider =
+                new HikariConnectionProvider(props);
+
+        } else {
+
+            String url = props.getProperty(
                 "persistence.db.url",
                 "jdbc:sqlite:gdb.db"
             );
 
-            String driver = properties.getProperty(
+            String driver = props.getProperty(
                 "persistence.db.driver",
                 "org.sqlite.JDBC"
             );
 
             connectionProvider =
                 new JdbcConnectionProvider(url, driver);
-
-            SchemaInitializer.initialize(connectionProvider);
         }
 
-        return connectionProvider;
+        SchemaInitializer.initialize(connectionProvider);
     }
+
+    return connectionProvider;
+}
+
 
     // Get account repository
     public static synchronized AccountRepository
